@@ -46,7 +46,7 @@ task("deploy-testnets", "Deploys contract on a provided network").setAction(
 task("verify-rentable-ERC721", "Verify RentableERC721").setAction(
   async (taskArguments, hre, runSuper) => {
     await hre.run("verify:verify", {
-      address: "0xD66C993d216714432e3C3274D2a7c78aDeC2d66e",
+      address: "0x51dBAbF4fE8a8EE769D9788E6b3cDb3B0D976518",
       constructorArguments: ["Ai siktir", "AS", ""],
     });
   }
