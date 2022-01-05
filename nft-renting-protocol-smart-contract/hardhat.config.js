@@ -11,7 +11,7 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-task("deploy-testnets", "Deploys contract on a provided network").setAction(
+task("deploy-testnet", "Deploys contract on a provided network").setAction(
   async (taskArguments, hre, runSuper) => {
     await hre.run("compile"); // We are compiling the contracts using subtask
     const [deployer] = await ethers.getSigners(); // We are getting the deployer
@@ -19,36 +19,14 @@ task("deploy-testnets", "Deploys contract on a provided network").setAction(
     console.log("Deploying contracts with the account:", deployer.address); // We are printing the address of the deployer
     console.log("Account balance:", (await deployer.getBalance()).toString()); // We are printing the account balance
 
-    const RentableERC721 = await ethers.getContractFactory("RentableERC721");
-    const rentableERC721Contract = await RentableERC721.deploy(
-      "Ai siktir",
-      "AS",
-      ""
-    );
-    console.log("Waiting for RentableERC721 deployment...");
-    await rentableERC721Contract.deployed();
+    const RentingPool = await ethers.getContractFactory("RentingPool");
+    const rentingPoolContract = await RentingPool.deploy();
+    console.log("Waiting for renting pool deployment...");
+    await rentingPoolContract.deployed();
 
-    console.log(
-      "RentableERC721 Contract address: ",
-      rentableERC721Contract.address
-    );
+    console.log("Renting pool Contract address: ", rentingPoolContract.address);
 
-    const Renting = await ethers.getContractFactory("Renting");
-    const rentingContract = await Renting.deploy();
-    console.log("Waiting for Renting deployment...");
-    await rentingContract.deployed();
-
-    console.log("Renting Contract address: ", rentingContract.address);
     console.log("Done!");
-  }
-);
-
-task("verify-rentable-ERC721", "Verify RentableERC721").setAction(
-  async (taskArguments, hre, runSuper) => {
-    await hre.run("verify:verify", {
-      address: "0x51dBAbF4fE8a8EE769D9788E6b3cDb3B0D976518",
-      constructorArguments: ["Ai siktir", "AS", ""],
-    });
   }
 );
 
@@ -61,8 +39,8 @@ task("verify-rentable-ERC721", "Verify RentableERC721").setAction(
 module.exports = {
   solidity: "0.8.4",
   networks: {
-    ropsten: {
-      url: "https://ropsten.infura.io/v3/40c2813049e44ec79cb4d7e0d18de173",
+    rinkeby: {
+      url: "https://rinkeby.infura.io/v3/f2613b094c124b7aaf56e1d7a9a8e1b9",
       // Definetly not recomended for real use cause this is the private key
       accounts: [
         "7be17a3ad85e054007d2ad61624017461389f4472259861e26bc37113f4c1f3c",
