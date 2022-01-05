@@ -9,15 +9,26 @@ import {
 } from "@mui/material";
 
 export default function NftCard({
+  address,
+  id,
   imageUrl,
   name,
   flashLoanPrice,
   pricePerBlock,
+  onLendLong,
 }: {
+  address: string;
+  id: string;
   imageUrl: string;
   name: string;
   flashLoanPrice: string;
   pricePerBlock: string;
+  onLendLong: (
+    name: string,
+    address: string,
+    id: string,
+    pricesPerBlock: string
+  ) => void;
 }) {
   return (
     <Card sx={{ maxWidth: 345 }}>
@@ -43,7 +54,12 @@ export default function NftCard({
       <Divider />
       <CardActions sx={{ justifyContent: "space-around" }}>
         <Button size="small">Flash loan</Button>
-        <Button size="small">Lend long</Button>
+        <Button
+          size="small"
+          onClick={() => onLendLong(name, address, id, pricePerBlock)}
+        >
+          Rent long
+        </Button>
       </CardActions>
     </Card>
   );

@@ -7,6 +7,7 @@ import {
   Container,
   Grid,
   Link,
+  Modal,
   Snackbar,
   Stack,
   Tab,
@@ -110,16 +111,6 @@ export const Web3Context = createContext<{
 }>({ state: initialState, dispatch: () => {} });
 
 const App = () => {
-  // const [provider, setProvider] = useState<any>();
-  // const [fetching, setFetching] = useState<boolean>(false);
-  // const [address, setAddress] = useState<string>("");
-  // const [library, setLibrary] = useState<any>(null);
-  // const [chainId, setChainId] = useState<number>(1);
-  // const [pendingRequest, setPedningRequest] = useState<boolean>(false);
-  // const [result, setResult] = useState<any>();
-  // const [libraryContract, setLibraryContract] = useState<any>(null);
-  // const [info, setInfo] = useState<any>(null);
-
   const [state, dispatch] = useReducer(web3Reducer, initialState);
 
   const [activeTab, setActiveTab] = useState("1");
@@ -226,18 +217,6 @@ const App = () => {
         </Alert>
       </Snackbar>
     </Web3Context.Provider>
-    /* <Header
-          connected={connected}
-          address={address}
-          chainId={chainId}
-          killSession={resetApp}
-        /> */
-
-    /* {fetching ? (
-          <Loader />
-        ) : (
-          !connected && <ConnectButton onClick={onConnect} />
-        )} */
   );
 };
 export default App;

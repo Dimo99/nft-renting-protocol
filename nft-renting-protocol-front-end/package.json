@@ -45,7 +45,9 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.16.7"
+  },
   "browserslist": [
     ">0.2%",
     "not dead",

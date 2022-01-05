@@ -1,5 +1,7 @@
-import { Grid } from "@mui/material";
+import { Box, Button, Grid, Modal, TextField, Typography } from "@mui/material";
+import { BigNumber } from "ethers";
 import { formatEther } from "ethers/lib/utils";
+import { parseEther } from "@ethersproject/units";
 import { useContext, useEffect, useState } from "react";
 import { Web3Context } from "src/App";
 import NftCard from "src/components/NftCard";
@@ -29,35 +31,54 @@ const metaDataABI = [
 
 export default function Rent() {
   const { state, dispatch } = useContext(Web3Context);
+  const [rentLong, setRentLong] = useState<{
+    name: string;
+    address: string;
+    id: string;
+    pricePerBlock: string;
+  }>();
+  const [numberOfBlocks, setNumberOfBlocks] = useState("0");
+
   const [nftPool, setNftPool] = useState<any[]>();
 
   useEffect(() => {
     async function myFetch() {
-      dispatch({ type: "fetching" });
-      const numberOfNFTs = await state.nftPoolContract.numberOfNFTsInPool();
+      try {
+        dispatch({ type: "fetching" });
+        const allNFTs = await state.nftPoolContract.allNFT();
+        let nftPoolArray: any[] = [];
+        for (let i = 0; i < allNFTs.nfts.length; i++) {
+          const { flashFee, pricePerBlock } = allNFTs.nfts[i];
+          const { nftAddress, nftId } = allNFTs.indexes[i];
 
-      let nftPoolArray = [];
+          const uri = await getContract(
+            nftAddress,
+            metaDataABI,
+            state.web3Provider,
+            state.address
+          ).tokenURI(nftId);
 
-      for (let i = 0; i < numberOfNFTs; i++) {
-        const [nftAddress, nftId] = await state.nftPoolContract.poolIndex(i);
-        const [_, _1, flashFee, pricePerBlock] =
-          await state.nftPoolContract.poolNft(nftAddress, nftId);
+          const { name, image } = await (await fetch(uri)).json();
 
-        const uri = await getContract(
-          nftAddress,
-          metaDataABI,
-          state.web3Provider,
-          state.address
-        ).tokenURI(nftId);
+          nftPoolArray.push({
+            nftAddress,
+            nftId: nftId.toString(),
+            name,
+            image,
+            flashFee,
+            pricePerBlock,
+          });
+        }
 
-        const { name, image } = await (await fetch(uri)).json();
-
-        nftPoolArray.push({ name, image, flashFee, pricePerBlock });
+        setNftPool(nftPoolArray);
+        dispatch({ type: "fetched" });
+      } catch (e) {
+        dispatch({
+          type: "fetched",
+          message: e.toString(),
+          messageType: "error",
+        });
       }
-
-      setNftPool(nftPoolArray);
-
-      dispatch({ type: "fetched" });
     }
     myFetch();
   }, []);
@@ -66,16 +87,127 @@ export default function Rent() {
     <Grid container spacing={2} rowGap={4}>
       {nftPool &&
         nftPool.map((x, i) => (
-          <Grid item xs={3}>
+          <Grid key={i} item xs={3}>
             <NftCard
-              key={i}
+              address={x.nftAddress}
+              id={x.nftId}
               imageUrl={x.image}
               name={x.name}
               pricePerBlock={formatEther(x.pricePerBlock)}
               flashLoanPrice={formatEther(x.flashFee)}
+              onLendLong={(name, address, id, pricePerBlock) => {
+                setRentLong({ name, address, id, pricePerBlock });
+              }}
             />
           </Grid>
         ))}
+      {rentLong && (
+        <Modal
+          open={rentLong !== undefined}
+          onClose={() => {
+            setRentLong(undefined);
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 1000,
+              height: 500,
+              bgcolor: "background.paper",
+              border: "2px solid #000",
+              boxShadow: 24,
+              p: 4,
+            }}
+          >
+            <Box
+              sx={{
+                top: "40%",
+                position: "absolute",
+                height: "100%",
+                width: "95%",
+                textAlign: "center",
+              }}
+            >
+              <Typography id="modal-modal-title" sx={{ marginBottom: "10px" }}>
+                Rent long {rentLong.name} with address: {rentLong.address} and
+                nftId: {rentLong.id}
+              </Typography>
+              <TextField
+                fullWidth
+                type="number"
+                label="Number of blocks"
+                variant="outlined"
+                value={numberOfBlocks}
+                onChange={(e) => setNumberOfBlocks(e.currentTarget.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                It is gonna cost you{" "}
+                {formatEther(
+                  BigNumber.from(numberOfBlocks).mul(
+                    parseEther(rentLong.pricePerBlock)
+                  )
+                )}{" "}
+                ETH.
+              </Typography>
+              <Button
+                size="small"
+                onClick={async () => {
+                  setRentLong(undefined);
+                  dispatch({ type: "fetching" });
+                  try {
+                    const transaction = await state.nftPoolContract.rentLong(
+                      rentLong.address,
+                      BigNumber.from(rentLong.id),
+                      state.address,
+                      BigNumber.from(numberOfBlocks),
+                      {
+                        value: BigNumber.from(numberOfBlocks).mul(
+                          parseEther(rentLong.pricePerBlock)
+                        ),
+                      }
+                    );
+
+                    dispatch({
+                      type: "fetching",
+                      transactionHash: transaction.hash,
+                    });
+
+                    const transactionReceipt = await transaction.wait();
+
+                    if (transactionReceipt.status === 1) {
+                      dispatch({
+                        type: "fetched",
+                        messageType: "success",
+                        message: "Successfully rented NFT",
+                      });
+                    } else {
+                      dispatch({
+                        type: "fetched",
+                        messageType: "error",
+                        message: JSON.stringify(transactionReceipt),
+                      });
+                    }
+                  } catch (e) {
+                    dispatch({
+                      type: "fetched",
+                      messageType: "error",
+                      message: e.error.message,
+                    });
+                  }
+                }}
+              >
+                Confirm
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
+      )}
     </Grid>
   );
 }

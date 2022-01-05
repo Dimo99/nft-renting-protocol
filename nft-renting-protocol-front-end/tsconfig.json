@@ -23,7 +23,7 @@
         "allowSyntheticDefaultImports": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
-        "strict": true,
+        "strict": false,
         "noFallthroughCasesInSwitch": true,
         "isolatedModules": true,
         "noEmit": true

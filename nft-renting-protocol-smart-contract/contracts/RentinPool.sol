@@ -391,9 +391,10 @@ contract RentingPool is ERC721Holder {
     function ownerNFT(address owner)
         external
         view
-        returns (PoolNFT[] memory ids)
+        returns (PoolNFT[] memory nfts, Key[] memory indexes)
     {
-        PoolNFT[] memory result = new PoolNFT[](ownerNFTCount[owner]);
+        nfts = new PoolNFT[](ownerNFTCount[owner]);
+        indexes = new Key[](ownerNFTCount[owner]);
         uint256 counter = 0;
 
         for (uint256 i = 0; i < poolIndex.length; i++) {
@@ -401,27 +402,32 @@ contract RentingPool is ERC721Holder {
                 poolNft[poolIndex[i].nftAddress][poolIndex[i].nftId]
                     .originalOwner == owner
             ) {
-                result[counter] = poolNft[poolIndex[i].nftAddress][
+                nfts[counter] = poolNft[poolIndex[i].nftAddress][
                     poolIndex[i].nftId
                 ];
+
+                indexes[counter] = poolIndex[i];
+
                 counter++;
             }
         }
-
-        return result;
     }
 
     function getEarnings(address owner) external view returns (uint256) {
         return earnings[owner];
     }
 
-    function allNFT() external view returns (PoolNFT[] memory ids) {
-        PoolNFT[] memory result = new PoolNFT[](poolIndex.length);
+    function allNFT()
+        external
+        view
+        returns (PoolNFT[] memory nfts, Key[] memory indexes)
+    {
+        nfts = new PoolNFT[](poolIndex.length);
+        indexes = new Key[](poolIndex.length);
 
         for (uint256 i = 0; i < poolIndex.length; i++) {
-            result[i] = poolNft[poolIndex[i].nftAddress][poolIndex[i].nftId];
+            nfts[i] = poolNft[poolIndex[i].nftAddress][poolIndex[i].nftId];
+            indexes[i] = poolIndex[i];
         }
-
-        return result;
     }
 }

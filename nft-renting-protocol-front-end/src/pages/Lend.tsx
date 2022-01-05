@@ -87,12 +87,6 @@ export default function Lend() {
           onClick={async () => {
             dispatch({ type: "fetching" });
             try {
-              console.log(BigNumber.from(nftId));
-
-              console.log(parseEther(nftFlashFee));
-              console.log(parseEther(nftPricePerBlock));
-              console.log(BigNumber.from(nftMaximumNumberOfBlocks));
-
               const transaction = await state.nftPoolContract.addNft(
                 nftAddress,
                 BigNumber.from(nftId),
