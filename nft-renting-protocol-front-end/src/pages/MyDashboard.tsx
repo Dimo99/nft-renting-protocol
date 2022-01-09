@@ -214,6 +214,38 @@ export default function MyDashboard() {
                   setNftAddress(address);
                   setNftId(id);
                 }}
+                onSetTokenOperator={async (address, id) => {
+                  dispatch({ type: "fetching" });
+                  try {
+                    const transaction =
+                      await state.nftPoolContract.setTokenOperator(address, id);
+                    dispatch({
+                      type: "fetching",
+                      transactionHash: transaction.hash,
+                    });
+
+                    const transactionReceipt = await transaction.wait();
+                    if (transactionReceipt.status === 1) {
+                      dispatch({
+                        type: "fetched",
+                        messageType: "success",
+                        message: "Successfully removed NFT",
+                      });
+                    } else {
+                      dispatch({
+                        type: "fetched",
+                        messageType: "error",
+                        message: JSON.stringify(transactionReceipt),
+                      });
+                    }
+                  } catch (e) {
+                    dispatch({
+                      type: "fetched",
+                      messageType: "error",
+                      message: e.error.message,
+                    });
+                  }
+                }}
                 onRemove={async (address, id) => {
                   dispatch({ type: "fetching" });
                   try {
@@ -233,7 +265,7 @@ export default function MyDashboard() {
                       dispatch({
                         type: "fetched",
                         messageType: "success",
-                        message: "Successfully removed NFT",
+                        message: "Successfully removed renter",
                       });
                     } else {
                       dispatch({

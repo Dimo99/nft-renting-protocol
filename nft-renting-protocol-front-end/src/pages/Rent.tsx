@@ -186,7 +186,7 @@ export default function Rent() {
                     dispatch({
                       type: "fetched",
                       messageType: "error",
-                      message: e.error.message,
+                      message: e?.error?.message,
                     });
                   }
                 }}

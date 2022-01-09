@@ -17,6 +17,7 @@ export default function NftCardOwner({
   pricePerBlock,
   onEdit,
   onRemove,
+  onSetTokenOperator,
 }: {
   address: string;
   id: string;
@@ -26,6 +27,7 @@ export default function NftCardOwner({
   pricePerBlock: string;
   onEdit: (address: string, id: string) => void;
   onRemove: (address: string, id: string) => void;
+  onSetTokenOperator: (address: string, id: string) => void;
 }) {
   return (
     <Card sx={{ maxWidth: 345 }}>
@@ -54,7 +56,10 @@ export default function NftCardOwner({
           Edit
         </Button>
         <Button size="small" onClick={() => onRemove(address, id)}>
-          Remove
+          Remove from pool
+        </Button>
+        <Button size="small" onClick={() => onSetTokenOperator(address, id)}>
+          Remove renter
         </Button>
       </CardActions>
     </Card>
