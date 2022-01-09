@@ -12,7 +12,7 @@ import { Web3Context } from "../App";
 
 import NFTPool from "../abis/NFTPool.json";
 
-const NFTPoolAddress = "0xb88908a0E4184C8725C262A7d0f4c5c19D3A45d2";
+export const NFTPoolAddress = "0x0800df0D2464E9268Ae5c3A9C352719A30b76F0b";
 
 let web3Modal: Web3Modal;
 export default function ConnectButton() {

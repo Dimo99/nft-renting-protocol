@@ -6,28 +6,7 @@ import { useContext, useEffect, useState } from "react";
 import { Web3Context } from "src/App";
 import NftCard from "src/components/NftCard";
 import { getContract } from "src/helpers/ethers";
-
-const metaDataABI = [
-  {
-    constant: true,
-    inputs: [
-      {
-        name: "_tokenId",
-        type: "uint256",
-      },
-    ],
-    name: "tokenURI",
-    outputs: [
-      {
-        name: "",
-        type: "string",
-      },
-    ],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-];
+import metaDataABI from "../abis/MetaDataABI.json";
 
 export default function Rent() {
   const { state, dispatch } = useContext(Web3Context);
@@ -47,18 +26,29 @@ export default function Rent() {
         dispatch({ type: "fetching" });
         const allNFTs = await state.nftPoolContract.allNFT();
         let nftPoolArray: any[] = [];
-        for (let i = 0; i < allNFTs.nfts.length; i++) {
-          const { flashFee, pricePerBlock } = allNFTs.nfts[i];
-          const { nftAddress, nftId } = allNFTs.indexes[i];
 
-          const uri = await getContract(
-            nftAddress,
-            metaDataABI,
-            state.web3Provider,
-            state.address
-          ).tokenURI(nftId);
+        for (let i = 0; i < allNFTs.length; i++) {
+          const { flashFee, pricePerBlock, nftAddress, nftId } = allNFTs[i];
 
-          const { name, image } = await (await fetch(uri)).json();
+          let name = "No openzeppelin compatible";
+          let image =
+            "https://www.generationsforpeace.org/wp-content/uploads/2018/03/empty.jpg";
+
+          try {
+            const uri = await getContract(
+              nftAddress,
+              metaDataABI,
+              state.web3Provider,
+              state.address
+            ).tokenURI(nftId);
+
+            const obj = await (await fetch(uri)).json();
+
+            name = obj.name;
+            image = obj.image;
+          } catch (e) {
+            // In case the NFT is not ERC721Enumerable or does not return JSON including {name, image}
+          }
 
           nftPoolArray.push({
             nftAddress,
@@ -164,7 +154,6 @@ export default function Rent() {
                     const transaction = await state.nftPoolContract.rentLong(
                       rentLong.address,
                       BigNumber.from(rentLong.id),
-                      state.address,
                       BigNumber.from(numberOfBlocks),
                       {
                         value: BigNumber.from(numberOfBlocks).mul(

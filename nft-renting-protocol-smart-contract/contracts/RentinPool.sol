@@ -47,27 +47,24 @@ contract RentingPool is ERC721Holder {
         address indexed operator
     );
 
-    struct Key {
+    struct PoolNFT {
         address nftAddress;
         uint256 nftId;
-    }
-
-    struct PoolNFT {
         address originalOwner;
         address operator;
         uint256 flashFee;
         uint256 pricePerBlock;
         uint256 maxLongTermBlocks;
         uint256 rentedUntil;
-        bool isRentable;
+        bool isOperable;
         uint256 index;
     }
 
     // Mapping from NFT to details
-    mapping(address => mapping(uint256 => PoolNFT)) private poolNft;
+    mapping(uint256 => PoolNFT) private poolNft;
 
     // Array for enumarating the NFT collection
-    Key[] private poolIndex;
+    uint256[] private poolIndex;
 
     // Mapping of earnings of each user of the pool
     mapping(address => uint256) private earnings;
@@ -101,7 +98,11 @@ contract RentingPool is ERC721Holder {
 
         uint256 index = poolIndex.length;
 
-        poolNft[nftAddress][nftId] = PoolNFT(
+        uint256 h = uint256(keccak256(abi.encodePacked(nftAddress, nftId)));
+
+        poolNft[h] = PoolNFT(
+            nftAddress,
+            nftId,
             msg.sender,
             msg.sender,
             flashFee,
@@ -112,7 +113,7 @@ contract RentingPool is ERC721Holder {
             index
         );
 
-        poolIndex.push(Key(nftAddress, nftId));
+        poolIndex.push(h);
 
         ownerNFTCount[msg.sender]++;
 
@@ -150,7 +151,9 @@ contract RentingPool is ERC721Holder {
         uint256 pricePerBlock,
         uint256 maxLongTermBlocks
     ) external {
-        PoolNFT storage nft = poolNft[nftAddress][nftId];
+        PoolNFT storage nft = poolNft[
+            uint256(keccak256(abi.encodePacked(nftAddress, nftId)))
+        ];
 
         require(
             nft.originalOwner == msg.sender,
@@ -181,7 +184,8 @@ contract RentingPool is ERC721Holder {
      * Emits an {RemoveNft} event.
      */
     function removeNft(address nftAddress, uint256 nftId) external {
-        PoolNFT storage nft = poolNft[nftAddress][nftId];
+        uint256 h = uint256(keccak256(abi.encodePacked(nftAddress, nftId)));
+        PoolNFT storage nft = poolNft[h];
 
         require(
             nft.originalOwner == msg.sender,
@@ -193,12 +197,12 @@ contract RentingPool is ERC721Holder {
             "Can't remove nft from the pool while it is rented"
         );
 
-        uint256 nftToDelete = poolNft[nftAddress][nftId].index;
-        Key storage keyToMove = poolIndex[poolIndex.length - 1];
+        uint256 nftToDelete = nft.index;
+        uint256 keyToMove = poolIndex[poolIndex.length - 1];
         poolIndex[nftToDelete] = keyToMove;
-        poolNft[keyToMove.nftAddress][keyToMove.nftId].index = nftToDelete;
+        poolNft[keyToMove].index = nftToDelete;
         poolIndex.pop();
-        delete poolNft[nftAddress][nftId];
+        delete poolNft[h];
 
         ownerNFTCount[msg.sender]--;
 
@@ -239,7 +243,9 @@ contract RentingPool is ERC721Holder {
         address receiverAddress,
         bytes calldata data
     ) external payable {
-        PoolNFT storage nft = poolNft[nftAddress][nftId];
+        PoolNFT storage nft = poolNft[
+            uint256(keccak256(abi.encodePacked(nftAddress, nftId)))
+        ];
 
         bool isRented = nft.rentedUntil >= block.number;
 
@@ -263,7 +269,7 @@ contract RentingPool is ERC721Holder {
             nftId
         );
 
-        if (!isRented && nft.isRentable) {
+        if (!isRented && nft.isOperable) {
             IOperable(nftAddress).setOperator(nftId, receiverAddress);
         }
 
@@ -278,7 +284,7 @@ contract RentingPool is ERC721Holder {
             "Error during FlashRenter execution"
         );
 
-        if (!isRented && nft.isRentable) {
+        if (!isRented && nft.isOperable) {
             IOperable(nftAddress).setOperator(nftId, nft.operator);
         }
 
@@ -288,7 +294,13 @@ contract RentingPool is ERC721Holder {
             nftId
         );
 
-        earnings[nft.originalOwner] += msg.value;
+        earnings[nft.originalOwner] += flashFee;
+
+        // return extra money
+        if (msg.value > flashFee) {
+            (bool success, ) = msg.sender.call{value: msg.value - flashFee}("");
+            require(success, "Transfer failed");
+        }
 
         emit FlashLoan(nftAddress, nftId, msg.sender);
     }
@@ -297,7 +309,7 @@ contract RentingPool is ERC721Holder {
      * @dev Rent nft for number of blocks
      * @param nftAddress - The address of NFT contract
      * @param nftId - Id of the NFT token you want to rent
-     * @param receiverAddress - who is renting the NFT
+     * @param blocks - number of blocks to rent for
      * Requirments:
      *
      * - the NFT is not currently rented
@@ -307,17 +319,18 @@ contract RentingPool is ERC721Holder {
     function rentLong(
         address nftAddress,
         uint256 nftId,
-        address receiverAddress,
         uint256 blocks
     ) external payable {
-        PoolNFT storage nft = poolNft[nftAddress][nftId];
+        PoolNFT storage nft = poolNft[
+            uint256(keccak256(abi.encodePacked(nftAddress, nftId)))
+        ];
 
         require(nft.pricePerBlock > 0, "The nft is not available");
 
         require(nft.rentedUntil < block.number, "The nft is currently rented");
 
         require(
-            nft.maxLongTermBlocks <= blocks,
+            blocks <= nft.maxLongTermBlocks,
             "You can't rent this nft for so long"
         );
 
@@ -326,16 +339,24 @@ contract RentingPool is ERC721Holder {
             "Payment is not enough"
         );
 
-        nft.operator = receiverAddress;
+        nft.operator = msg.sender;
         nft.rentedUntil = block.number + blocks;
 
-        earnings[nft.originalOwner] += msg.value;
+        earnings[nft.originalOwner] += nft.pricePerBlock * blocks;
 
-        if (nft.isRentable) {
-            IOperable(nftAddress).setOperator(nftId, receiverAddress);
+        if (nft.isOperable) {
+            IOperable(nftAddress).setOperator(nftId, msg.sender);
         }
 
-        emit LongTermRent(nftAddress, nftId, blocks, receiverAddress);
+        // return extra money
+        if (msg.value > nft.pricePerBlock * blocks) {
+            (bool success, ) = msg.sender.call{
+                value: msg.value - nft.pricePerBlock * blocks
+            }("");
+            require(success, "Transfer failed");
+        }
+
+        emit LongTermRent(nftAddress, nftId, blocks, msg.sender);
     }
 
     /**
@@ -348,26 +369,25 @@ contract RentingPool is ERC721Holder {
         view
         returns (address operator)
     {
-        return poolNft[nftAddress][nftId].operator;
+        return
+            poolNft[uint256(keccak256(abi.encodePacked(nftAddress, nftId)))]
+                .operator;
     }
 
     /**
      * @dev Set token operator
      * @param nftAddress - The address of NFT contract
      * @param nftId - Id of the NFT token
-     * @param operator - who becomes the next operator
      * Requirments:
      *
      * - msg.sender is the original token owner
      * - the nft is not currently rented
      * Emits {TokenOperatorSet} event
      */
-    function setTokenOperator(
-        address nftAddress,
-        uint256 nftId,
-        address operator
-    ) external {
-        PoolNFT storage nft = poolNft[nftAddress][nftId];
+    function setTokenOperator(address nftAddress, uint256 nftId) external {
+        PoolNFT storage nft = poolNft[
+            uint256(keccak256(abi.encodePacked(nftAddress, nftId)))
+        ];
 
         require(
             msg.sender == nft.originalOwner,
@@ -379,35 +399,26 @@ contract RentingPool is ERC721Holder {
             "Can't set operator while token is rented"
         );
 
-        nft.operator = operator;
+        nft.operator = msg.sender;
 
-        if (nft.isRentable) {
-            IOperable(nftAddress).setOperator(nftId, operator);
+        if (nft.isOperable) {
+            IOperable(nftAddress).setOperator(nftId, msg.sender);
         }
 
-        emit TokenOperatorSet(nftAddress, nftId, operator);
+        emit TokenOperatorSet(nftAddress, nftId, msg.sender);
     }
 
     function ownerNFT(address owner)
         external
         view
-        returns (PoolNFT[] memory nfts, Key[] memory indexes)
+        returns (PoolNFT[] memory nfts)
     {
         nfts = new PoolNFT[](ownerNFTCount[owner]);
-        indexes = new Key[](ownerNFTCount[owner]);
         uint256 counter = 0;
 
         for (uint256 i = 0; i < poolIndex.length; i++) {
-            if (
-                poolNft[poolIndex[i].nftAddress][poolIndex[i].nftId]
-                    .originalOwner == owner
-            ) {
-                nfts[counter] = poolNft[poolIndex[i].nftAddress][
-                    poolIndex[i].nftId
-                ];
-
-                indexes[counter] = poolIndex[i];
-
+            if (poolNft[poolIndex[i]].originalOwner == owner) {
+                nfts[counter] = poolNft[poolIndex[i]];
                 counter++;
             }
         }
@@ -417,17 +428,11 @@ contract RentingPool is ERC721Holder {
         return earnings[owner];
     }
 
-    function allNFT()
-        external
-        view
-        returns (PoolNFT[] memory nfts, Key[] memory indexes)
-    {
+    function allNFT() external view returns (PoolNFT[] memory nfts) {
         nfts = new PoolNFT[](poolIndex.length);
-        indexes = new Key[](poolIndex.length);
 
         for (uint256 i = 0; i < poolIndex.length; i++) {
-            nfts[i] = poolNft[poolIndex[i].nftAddress][poolIndex[i].nftId];
-            indexes[i] = poolIndex[i];
+            nfts[i] = poolNft[poolIndex[i]];
         }
     }
 }
