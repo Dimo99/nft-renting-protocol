@@ -41,10 +41,11 @@ const supportedChains: IChainData[] = [
     network: "ropsten",
     chain_id: 3,
     network_id: 3,
-    rpc_url: "https://ropsten.infura.io/v3/%API_KEY%",
+    rpc_url: "https://ropsten.infura.io/v3/2d93e04d5e87490b82e12d9a4bf0c58b",
     native_currency: {
       symbol: "ETH",
       name: "Ethereum",
+      
       decimals: "18",
       contractAddress: "",
       balance: "",

@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
+require("dotenv").config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -39,12 +40,9 @@ task("deploy-testnet", "Deploys contract on a provided network").setAction(
 module.exports = {
   solidity: "0.8.4",
   networks: {
-    rinkeby: {
-      url: "https://rinkeby.infura.io/v3/f2613b094c124b7aaf56e1d7a9a8e1b9",
-      // Definetly not recomended for real use cause this is the private key
-      accounts: [
-        "7be17a3ad85e054007d2ad61624017461389f4472259861e26bc37113f4c1f3c",
-      ],
+    ropsten: {
+      url: process.env.URL,
+      accounts: [process.env.PRIVATE_KEY],
     },
   },
   etherscan: {

@@ -12,7 +12,7 @@ import { Web3Context } from "../App";
 
 import NFTPool from "../abis/NFTPool.json";
 
-export const NFTPoolAddress = "0x0800df0D2464E9268Ae5c3A9C352719A30b76F0b";
+export const NFTPoolAddress = "0xcccAC362d9a8C4D0A7977dFa8BeB07b018fc05F0";
 
 let web3Modal: Web3Modal;
 export default function ConnectButton() {
@@ -104,7 +104,7 @@ export default function ConnectButton() {
 
     const network = await library.getNetwork();
 
-    if (network.chainId !== 4) {
+    if (network.chainId !== 3) {
       dispatch({ type: "changeNetwork" });
       return;
     }

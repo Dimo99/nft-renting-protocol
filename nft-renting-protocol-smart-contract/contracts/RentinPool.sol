@@ -80,7 +80,7 @@ contract RentingPool is ERC721Holder {
      * @param maxLongTermBlocks - Maximum amount of blocks for longterm rent
      * Requirements:
      *
-     * - Caller should be owner of the nft
+     * - Caller should be owner of the nft and have it approved for the contract
      * Emits an {AddNft} event.
      */
     function addNft(

@@ -1,6 +1,7 @@
 import { parseEther } from "@ethersproject/units";
 import { Button, Grid, TextField } from "@mui/material";
 import { BigNumber } from "ethers";
+import { stat } from "fs";
 import { useContext, useState } from "react";
 import { Web3Context } from "src/App";
 import { NFTPoolAddress } from "src/components/ConnectButton";
@@ -90,12 +91,16 @@ export default function Lend() {
           onClick={async () => {
             dispatch({ type: "fetching" });
             try {
+              console.log("ok");
+
               const transaction = await getContract(
                 nftAddress,
                 ApproveABI,
                 state.web3Provider,
                 state.address
               ).approve(NFTPoolAddress, BigNumber.from(nftId));
+
+              console.log("hmmmmm");
 
               dispatch({ type: "fetching", transactionHash: transaction.hash });
 
@@ -160,6 +165,7 @@ export default function Lend() {
                 });
               }
             } catch (e) {
+              console.log(e);
               dispatch({
                 type: "fetched",
                 messageType: "error",

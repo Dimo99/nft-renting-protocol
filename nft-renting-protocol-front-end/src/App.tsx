@@ -88,7 +88,7 @@ function web3Reducer(state: Web3State, action: Web3Action): Web3State {
       return {
         ...state,
         messageType: "error",
-        message: "Please change to rinkeby network",
+        message: "Please change to ropsten network",
       };
     }
     case "resetState": {
@@ -137,7 +137,7 @@ const App = () => {
               <ConnectButton />
             ) : (
               <Link
-                href={`https://rinkeby.etherscan.io/address/${state.address}`}
+                href={`https://ropsten.etherscan.io/address/${state.address}`}
                 target="_blank"
                 color="inherit"
                 noWrap
@@ -167,7 +167,7 @@ const App = () => {
               {state.transactionHash && (
                 <Link
                   variant="h5"
-                  href={`https://rinkeby.etherscan.io/tx/${state.transactionHash}`}
+                  href={`https://ropsten.etherscan.io/tx/${state.transactionHash}`}
                   target="_blank"
                 >
                   {state.transactionHash}
